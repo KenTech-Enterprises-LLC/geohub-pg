@@ -1,47 +1,28 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getUserId, throwError } from '@backend/utils'
+import { getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 import { RecentSearchItem } from '@types'
 
 const saveRecentSearch = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
   const { type, term, searchedUserId, searchedMapId } = req.body
 
-  const newSearchItem: RecentSearchItem = {
-    type,
-    term,
-    userId: searchedUserId ? new ObjectId(searchedUserId) : undefined,
-    mapId: searchedMapId ? new ObjectId(searchedMapId) : undefined,
-    createdAt: new Date(),
-  }
-
-  // Adds the recent search item and keeps only the 5 most recent
-  const result = await collections.recentSearches?.findOneAndUpdate(
-    { userId: new ObjectId(userId) },
-    {
-      $setOnInsert: { userId: new ObjectId(userId) },
-      $push: {
-        searches: {
-          $each: [newSearchItem],
-          $sort: { createdAt: -1 },
-          $slice: 5,
-        },
-      },
-    },
-    {
-      upsert: true,
+  try {
+    // Remove oldest if more than 4 already exist
+    const countRes = await pool.query('SELECT COUNT(*) FROM recentsearches WHERE userid = $1', [userId]);
+    const count = parseInt(countRes.rows[0].count, 10);
+    if (count >= 5) {
+      await pool.query('DELETE FROM recentsearches WHERE userid = $1 AND createdat = (SELECT MIN(createdat) FROM recentsearches WHERE userid = $1)', [userId]);
     }
-  )
-
-  if (!result) {
-    return throwError(
-      res,
-      400,
-      `Something went wrong when trying to insert the recent search for user with id: ${userId}`
-    )
+    // Insert new search item
+    await pool.query(
+      'INSERT INTO recentsearches (userid, type, term, searcheduserid, searchedmapid, createdat) VALUES ($1, $2, $3, $4, $5, $6)',
+      [userId, type, term, searchedUserId || null, searchedMapId || null, new Date()]
+    );
+    res.status(201).send({ message: 'Recent search successfully saved' });
+  } catch (err) {
+    return throwError(res, 400, `Something went wrong when trying to insert the recent search for user with id: ${userId}`);
   }
-
-  res.status(201).send({ message: 'Recent search successfully saved' })
 }
 
 export default saveRecentSearch

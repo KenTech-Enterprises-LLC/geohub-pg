@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+
 
 type Location = {
   lat: number
@@ -7,7 +7,7 @@ type Location = {
   heading?: number
   pitch?: number
   zoom?: number
-  mapId?: ObjectId
+  mapId?: string
   countryCode?: string
 }
 

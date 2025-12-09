@@ -5,12 +5,12 @@ import { Avatar } from '@components/system'
 import {
   HeartIcon,
   HomeIcon,
-  LightningBoltIcon,
-  LocationMarkerIcon,
+  BoltIcon,
+  MapPinIcon,
   MapIcon,
   PlayIcon,
-  ViewGridIcon,
-} from '@heroicons/react/outline'
+  Squares2X2Icon,
+} from '@heroicons/react/24/outline'
 import { useAppDispatch, useAppSelector } from '@redux/hook'
 import { updateRecentlyPlayed } from '@redux/slices'
 import { MapType } from '@types'
@@ -61,13 +61,13 @@ const Sidebar: FC = () => {
 
             <Item text="Liked Maps" icon={<HeartIcon />} route="/liked" />
 
-            <Item text="Find Maps" icon={<ViewGridIcon />} route="/maps" />
+            <Item text="Find Maps" icon={<Squares2X2Icon />} route="/maps" />
 
             <Item text="Ongoing Games" icon={<PlayIcon />} route="/ongoing" />
 
-            <Item text="Country Streaks" icon={<LightningBoltIcon />} route="/streaks" />
+            <Item text="Country Streaks" icon={<BoltIcon />} route="/streaks" />
 
-            <Item text="Daily Challenge" icon={<LocationMarkerIcon />} route="/daily-challenge" />
+            <Item text="Daily Challenge" icon={<MapPinIcon />} route="/daily-challenge" />
           </div>
 
           <div className="quickLinksSection">

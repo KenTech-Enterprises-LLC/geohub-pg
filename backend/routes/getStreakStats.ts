@@ -1,117 +1,69 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, compareObjectIds, getUserId, throwError } from '@backend/utils'
 import { COUNTRY_STREAKS_ID } from '@utils/constants/random'
-import { ObjectId } from 'mongodb'
-import { TopScore } from '@backend/models'
-
-type TopScoreType = TopScore & {
-  highlight?: boolean
-}
+import { getUserId } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const LOCATION_COUNT = 250000
 const COUNTRY_COUNT = 98
 
 const getStreakStats = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
-
-  const mapLeaderboard = await collections.mapLeaderboard
-    ?.aggregate([
-      { $match: { mapId: COUNTRY_STREAKS_ID } },
-      {
-        $unwind: '$scores',
-      },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'scores.userId',
-          foreignField: '_id',
-          as: 'userDetails',
-        },
-      },
-      {
-        $unwind: '$userDetails',
-      },
-      {
-        $group: {
-          _id: '$_id',
-          mapId: { $first: '$mapId' },
-          avgScore: { $first: '$avgScore' },
-          usersPlayed: { $first: '$usersPlayed' },
-          scores: {
-            $push: {
-              gameId: '$scores.gameId',
-              userId: '$scores.userId',
-              streak: '$scores.totalPoints',
-              totalTime: '$scores.totalTime',
-              userName: '$userDetails.name',
-              userAvatar: '$userDetails.avatar',
-            },
-          },
-        },
-      },
-    ])
-    .toArray()
-
-  if (!mapLeaderboard?.length) {
-    return res.status(200).send({
+  try {
+    // Get top streak scores for COUNTRY_STREAKS_ID
+    const scoresRes = await pool.query(`
+      SELECT g.id as gameId, g.userid as userId, g.streak as streak, g.totaltime as totalTime,
+             u.name as userName, u.avatar as userAvatar
+      FROM games g
+      JOIN users u ON g.userid = u.id
+      WHERE g.mapid = $1 AND g.mode = 'streak' AND g.state = 'finished'
+      ORDER BY g.streak DESC
+      LIMIT 100
+    `, [Number(COUNTRY_STREAKS_ID)]);
+    const topScores = scoresRes.rows;
+    // Get avgScore and usersPlayed
+    const avgScoreRes = await pool.query(
+      'SELECT AVG(streak) as avgscore, COUNT(DISTINCT userid) as usersplayed FROM games WHERE mapid = $1 AND mode = $2 AND state = $3',
+      [Number(COUNTRY_STREAKS_ID), 'streak', 'finished']
+    );
+    const avgScore = avgScoreRes.rows[0]?.avgscore ? Math.ceil(avgScoreRes.rows[0].avgscore) : 0;
+    const usersPlayed = avgScoreRes.rows[0]?.usersplayed || 0;
+    // Highlight user's top score if present
+    const thisUserIndex = topScores.findIndex((topScore) => topScore.userId === userId);
+    if (thisUserIndex !== -1) {
+      topScores[thisUserIndex] = { ...topScores[thisUserIndex], highlight: true };
+    } else {
+      // Get user's top streak score if not in topScores
+      const userScoreRes = await pool.query(`
+        SELECT g.id as gameId, g.userid as userId, g.streak as streak, g.totaltime as totalTime,
+               u.name as userName, u.avatar as userAvatar
+        FROM games g
+        JOIN users u ON g.userid = u.id
+        WHERE g.userid = $1 AND g.mode = 'streak' AND g.state = 'finished'
+        ORDER BY g.streak DESC
+        LIMIT 1
+      `, [userId]);
+      const usersTopScore = userScoreRes.rows;
+      if (usersTopScore?.length) {
+        topScores.push({ ...usersTopScore[0], highlight: true });
+      }
+    }
+    res.status(200).send({
+      avgScore,
+      usersPlayed,
+      locationCount: LOCATION_COUNT,
+      countryCount: COUNTRY_COUNT,
+      scores: topScores,
+    });
+  } catch (err) {
+    res.status(500).send({
       avgScore: 0,
       usersPlayed: 0,
       locationCount: LOCATION_COUNT,
       countryCount: COUNTRY_COUNT,
       scores: [],
-    })
+    });
   }
-
-  const streakStats = mapLeaderboard[0]
-  const topScores = streakStats.scores as TopScoreType[]
-
-  const thisUserIndex = topScores.findIndex((topScore) => compareObjectIds(topScore.userId, userId))
-  const isUserInTopFive = thisUserIndex !== -1
-
-  if (isUserInTopFive) {
-    topScores[thisUserIndex] = { ...topScores[thisUserIndex], highlight: true }
-  } else {
-    const usersTopScore = (await collections.games
-      ?.aggregate([
-        { $match: { mode: 'streak', userId: new ObjectId(userId), state: 'finished' } },
-        { $sort: { streak: -1 } },
-        { $limit: 1 },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'userDetails',
-          },
-        },
-        {
-          $unwind: '$userDetails',
-        },
-        {
-          $project: {
-            gameId: '$_id',
-            userId: 1,
-            userName: '$userDetails.name',
-            userAvatar: '$userDetails.avatar',
-            streak: 1,
-            totalTime: 1,
-          },
-        },
-      ])
-      .toArray()) as TopScoreType[]
-
-    if (usersTopScore?.length) {
-      topScores.push({ ...usersTopScore[0], highlight: true })
-    }
-  }
-
-  res.status(200).send({
-    avgScore: streakStats.avgScore,
-    usersPlayed: streakStats.usersPlayed,
-    locationCount: LOCATION_COUNT,
-    countryCount: COUNTRY_COUNT,
-    scores: topScores,
-  })
 }
+
 
 export default getStreakStats

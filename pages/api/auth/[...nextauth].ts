@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import Cryptr from 'cryptr'
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import CredentialProvider from 'next-auth/providers/credentials'
-import { collections, dbConnect } from '@backend/utils'
+import { pool } from '@backend/utils'
 
 const cryptr = new Cryptr(process.env.CRYPTR_SECRET as string)
 
@@ -20,8 +20,9 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       authorize: async (credentials, req) => {
-        await dbConnect()
-        const user = await collections.users?.findOne({ email: credentials?.email })
+        // PostgreSQL user lookup
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [credentials?.email])
+        const user = result.rows[0]
 
         if (!user) {
           throw new Error('Incorrect email or password')
@@ -36,13 +37,11 @@ export const authOptions: NextAuthOptions = {
         const decrypedMapsAPIKey = user.mapsAPIKey ? cryptr.decrypt(user.mapsAPIKey) : ''
 
         if (req.headers?.host === 'www.geohub.gg') {
-          await collections.users?.findOneAndUpdate({ _id: user._id }, { $set: { onNewDomain: true } })
+          await pool.query('UPDATE users SET onNewDomain = true WHERE id = $1', [user.id])
         }
 
-        // return user
         return {
-          id: user._id,
-          email: user.email,
+          ...user,
           name: user.name,
           avatar: user.avatar,
           bio: user.bio,

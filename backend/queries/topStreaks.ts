@@ -1,40 +1,17 @@
 import { TopScore } from '@backend/models'
-import { collections } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
-const queryTopStreaks = async (query: any, limit: number) => {
-  const data = await collections.games
-    ?.aggregate([
-      // Match the documents
-      { $match: { ...query, notForLeaderboard: { $ne: true } } },
-      // Sort the matches in descending order
-      { $sort: { streak: -1, totalTime: 1 } },
-      // Group by unique userId, getting the first document
-      // (We know that the first will be the highest, due to the sort)
-      {
-        $group: {
-          _id: '$userId',
-          gameId: { $first: '$_id' },
-          totalTime: { $first: '$totalTime' },
-          streak: { $first: '$streak' },
-        },
-      },
-      // Re-sort the resulting documents
-      { $sort: { streak: -1, totalTime: 1 } },
-      { $limit: limit },
-      // Format the result
-      {
-        $project: {
-          _id: 0,
-          gameId: '$gameId',
-          userId: '$_id',
-          totalPoints: '$streak',
-          totalTime: 1,
-        },
-      },
-    ])
-    .toArray()
-
-  return data as TopScore[] | undefined
+const queryTopStreaks = async (_query: any, limit: number) => {
+  // Replace with a SQL query for top streaks
+  const sql = `
+    SELECT g.id as gameId, g.userid as userId, g.streak as totalPoints, g.totaltime as totalTime
+    FROM games g
+    WHERE g.notforleaderboard IS NULL OR g.notforleaderboard = false
+    ORDER BY g.streak DESC, g.totaltime ASC
+    LIMIT $1
+  `;
+  const res = await pool.query(sql, [limit]);
+  return res.rows as TopScore[];
 }
 
 export default queryTopStreaks

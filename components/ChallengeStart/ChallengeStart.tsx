@@ -3,12 +3,12 @@ import { useRouter } from 'next/router'
 import { FC, useEffect, useState } from 'react'
 import { Avatar } from '@components/system'
 import {
-  ArrowsExpandIcon,
+  ArrowsPointingOutIcon,
   ClockIcon,
-  LocationMarkerIcon,
-  SwitchHorizontalIcon,
-  ZoomInIcon,
-} from '@heroicons/react/outline'
+  MapPinIcon,
+  ArrowsRightLeftIcon,
+  MagnifyingGlassPlusIcon,
+} from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import { ChallengeType, GameViewType } from '@types'
 import { MAP_AVATAR_PATH } from '@utils/constants/random'
@@ -57,7 +57,7 @@ const ChallengeStart: FC<Props> = ({ challengeData, handleStartChallenge }) => {
         />
 
         <div className="map-name">
-          <LocationMarkerIcon />
+          <MapPinIcon />
           <span>{challengeData.mapDetails?.name}</span>
         </div>
 
@@ -96,19 +96,19 @@ const ChallengeStart: FC<Props> = ({ challengeData, handleStartChallenge }) => {
         </div>
 
         <div className="settingsItem">
-          <ArrowsExpandIcon color={CAN_MOVE ? 'var(--green-300)' : '#888'} />
+          <ArrowsPointingOutIcon color={CAN_MOVE ? 'var(--green-300)' : '#888'} />
 
           {CAN_MOVE ? 'Moving Allowed' : 'No Move'}
         </div>
 
         <div className="settingsItem">
-          <SwitchHorizontalIcon color={CAN_PAN ? 'var(--green-300)' : '#888'} />
+          <ArrowsRightLeftIcon color={CAN_PAN ? 'var(--green-300)' : '#888'} />
 
           {CAN_PAN ? 'Panning Allowed' : 'No Pan'}
         </div>
 
         <div className="settingsItem">
-          <ZoomInIcon color={CAN_ZOOM ? 'var(--green-300)' : '#888'} />
+          <MagnifyingGlassPlusIcon color={CAN_ZOOM ? 'var(--green-300)' : '#888'} />
 
           {CAN_ZOOM ? 'Zooming Allowed' : 'No Zoom'}
         </div>

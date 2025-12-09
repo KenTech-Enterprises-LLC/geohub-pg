@@ -1,39 +1,34 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getLocations, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
+import { getLocations, throwError } from '@backend/utils'
 import { OFFICIAL_WORLD_ID } from '@utils/constants/random'
 
 const createDailyChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
   // First set winner for previous daily challenge
-  const previousDailyChallenge = await collections.challenges?.findOne(
-    { isDailyChallenge: true },
-    { sort: { createdAt: -1 } }
-  )
+  const prevRes = await pool.query('SELECT * FROM challenges WHERE is_daily_challenge = true ORDER BY created_at DESC LIMIT 1')
+  const previousDailyChallenge = prevRes.rows[0]
 
   if (previousDailyChallenge) {
-    const winningGame = await collections.games?.findOne(
-      { challengeId: new ObjectId(previousDailyChallenge._id), notForLeaderboard: { $ne: true } },
-      { sort: { totalPoints: -1, totalTime: 1 } }
+    const winRes = await pool.query(
+      'SELECT * FROM games WHERE challenge_id = $1 AND not_for_leaderboard != true ORDER BY total_points DESC, total_time ASC LIMIT 1',
+      [Number(previousDailyChallenge.id)]
     )
-
+    const winningGame = winRes.rows[0]
     if (winningGame) {
-      const { _id, userId, totalPoints, totalTime } = winningGame
-
       const winner = {
-        gameId: _id,
-        userId,
-        totalPoints,
-        totalTime,
+        gameId: winningGame.id,
+        userId: winningGame.user_id,
+        totalPoints: winningGame.total_points,
+        totalTime: winningGame.total_time,
       }
-
-      await collections.challenges?.findOneAndUpdate({ _id: previousDailyChallenge._id }, { $set: { winner } })
+      await pool.query('UPDATE challenges SET winner = $1 WHERE id = $2', [JSON.stringify(winner), Number(previousDailyChallenge.id)])
     }
   }
 
-  const locations = await getLocations(OFFICIAL_WORLD_ID)
+  const locations = await getLocations(Number(OFFICIAL_WORLD_ID))
 
   const newDailyChallenge = {
-    mapId: new ObjectId(OFFICIAL_WORLD_ID),
+    mapId: Number(OFFICIAL_WORLD_ID),
     createdAt: new Date(),
     isDailyChallenge: true,
     mode: 'standard',
@@ -45,16 +40,25 @@ const createDailyChallenge = async (req: NextApiRequest, res: NextApiResponse) =
     },
     locations,
   }
-
-  const createResult = await collections.challenges?.insertOne(newDailyChallenge)
-
-  if (!createResult) {
+  const insertSQL = `
+    INSERT INTO challenges (map_id, created_at, is_daily_challenge, mode, game_settings, locations)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id
+  `
+  const values = [
+    newDailyChallenge.mapId,
+    newDailyChallenge.createdAt,
+    newDailyChallenge.isDailyChallenge,
+    newDailyChallenge.mode,
+    JSON.stringify(newDailyChallenge.gameSettings),
+    JSON.stringify(newDailyChallenge.locations),
+  ]
+  try {
+    const createResult = await pool.query(insertSQL, values)
+    res.status(201).send({ challengeId: createResult.rows[0].id })
+  } catch (err) {
     return throwError(res, 400, 'Could not create new daily challenge')
   }
-
-  res.status(201).send({
-    challengeId: createResult?.insertedId,
-  })
 }
 
 export default createDailyChallenge

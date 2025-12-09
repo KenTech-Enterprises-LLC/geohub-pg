@@ -1,0 +1,17 @@
+/* Beta mode stylesheet overrides */
+body {
+  background: #f5f7ff !important;
+}
+
+.beta-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  background: #2d6cdf;
+  color: #fff;
+  text-align: center;
+  padding: 8px 0;
+  z-index: 9999;
+  font-weight: bold;
+}

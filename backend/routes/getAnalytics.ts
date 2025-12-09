@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getUserId, isUserAnAdmin, monthAgo, throwError, todayEnd } from '@backend/utils'
-import { userProject } from '@backend/utils/dbProjects'
+import { getUserId, isUserAnAdmin, monthAgo, throwError, todayEnd } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const getAnalytics = async (req: NextApiRequest, res: NextApiResponse) => {
   const newUsersByDayStart = req.body.newUsersByDayStart
@@ -10,15 +10,14 @@ const getAnalytics = async (req: NextApiRequest, res: NextApiResponse) => {
   const gamesPlayedByDayEnd = req.body.gamesPlayedByDayEnd
 
   const getCounts = async () => {
-    const userCount = await collections.users?.estimatedDocumentCount()
-    const singlePlayerGamesCount = await collections.games?.find({ challengeId: { $eq: null } }).count()
-    const challengesCount = await collections.games?.find({ challengeId: { $ne: null } }).count()
-    const streakGamesCount = await collections.games?.find({ mode: 'streak' }).count()
-    const customMapsCount = await collections.maps?.find({ creator: { $ne: 'GeoHub' } }).count()
-    const customLocationsCount = await collections.userLocations?.estimatedDocumentCount()
-    const customKeysCount = await collections.users?.find({ mapsAPIKey: { $exists: true, $ne: '' } }).count()
-    const unfinishedGamesCount = await collections.games?.find({ state: { $ne: 'finished' } }).count()
-
+    const userCount = parseInt((await pool.query('SELECT COUNT(*) FROM users')).rows[0].count, 10);
+    const singlePlayerGamesCount = parseInt((await pool.query('SELECT COUNT(*) FROM games WHERE challengeid IS NULL')).rows[0].count, 10);
+    const challengesCount = parseInt((await pool.query('SELECT COUNT(*) FROM games WHERE challengeid IS NOT NULL')).rows[0].count, 10);
+    const streakGamesCount = parseInt((await pool.query("SELECT COUNT(*) FROM games WHERE mode = 'streak'" )).rows[0].count, 10);
+    const customMapsCount = parseInt((await pool.query("SELECT COUNT(*) FROM maps WHERE creator != 'GeoHub'" )).rows[0].count, 10);
+    const customLocationsCount = parseInt((await pool.query('SELECT COUNT(*) FROM userlocations')).rows[0].count, 10);
+    const customKeysCount = parseInt((await pool.query("SELECT COUNT(*) FROM users WHERE mapsapikey IS NOT NULL AND mapsapikey != ''" )).rows[0].count, 10);
+    const unfinishedGamesCount = parseInt((await pool.query("SELECT COUNT(*) FROM games WHERE state != 'finished'" )).rows[0].count, 10);
     return [
       { title: 'Users', count: userCount },
       { title: 'Single Player Games', count: singlePlayerGamesCount },
@@ -28,125 +27,57 @@ const getAnalytics = async (req: NextApiRequest, res: NextApiResponse) => {
       { title: 'Custom Map Locations', count: customLocationsCount },
       { title: 'Custom Keys', count: customKeysCount },
       { title: 'Unfinished Games', count: unfinishedGamesCount },
-    ]
+    ];
   }
 
   const getRecentUsers = async () => {
-    const users = await collections.users
-      ?.aggregate([
-        { $sort: { createdAt: -1 } },
-        {
-          $lookup: {
-            from: 'games',
-            localField: '_id',
-            foreignField: 'userId',
-            as: 'games',
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            avatar: 1,
-            createdAt: 1,
-            gamesPlayed: { $size: '$games' },
-          },
-        },
-      ])
-      .limit(50)
-      .toArray()
-
-    return users
+    const usersRes = await pool.query(`
+      SELECT u.id, u.name, u.avatar, u.createdat,
+        (SELECT COUNT(*) FROM games g WHERE g.userid = u.id) AS gamesplayed
+      FROM users u
+      ORDER BY u.createdat DESC
+      LIMIT 50
+    `);
+    return usersRes.rows;
   }
 
   const getRecentGames = async () => {
-    const recentGames = await collections.games
-      ?.aggregate([
-        { $sort: { _id: -1 } },
-        {
-          $lookup: {
-            from: 'maps',
-            localField: 'mapId',
-            foreignField: '_id',
-            as: 'mapDetails',
-          },
-        },
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'userId',
-            foreignField: '_id',
-            as: 'userDetails',
-          },
-        },
-        { $unwind: '$userDetails' },
-        { $project: { userDetails: userProject } },
-      ])
-      .limit(50)
-      .toArray()
-
-    return recentGames
+    const gamesRes = await pool.query(`
+      SELECT g.id, g.createdat, g.mapid, m.name as mapname, m.previewimg as mapavatar,
+             g.userid, u.name as username, u.avatar as useravatar
+      FROM games g
+      JOIN maps m ON g.mapid = m.id
+      JOIN users u ON g.userid = u.id
+      ORDER BY g.id DESC
+      LIMIT 50
+    `);
+    return gamesRes.rows;
   }
 
   const getNewUsersByDay = async () => {
-    const newUsersByDay = await collections.users
-      ?.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: newUsersByDayStart || monthAgo, $lte: newUsersByDayEnd || todayEnd },
-          },
-        },
-        {
-          $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-            count: { $sum: 1 },
-          },
-        },
-        { $project: userProject },
-        {
-          $project: {
-            _id: 0,
-            date: '$_id',
-            count: 1,
-          },
-        },
-        {
-          $sort: { date: -1 },
-        },
-      ])
-      .toArray()
-
-    return newUsersByDay
+    const start = newUsersByDayStart || monthAgo;
+    const end = newUsersByDayEnd || todayEnd;
+    const usersRes = await pool.query(`
+      SELECT TO_CHAR(createdat, 'YYYY-MM-DD') AS date, COUNT(*) AS count
+      FROM users
+      WHERE createdat >= $1 AND createdat <= $2
+      GROUP BY date
+      ORDER BY date DESC
+    `, [start, end]);
+    return usersRes.rows;
   }
 
   const getGamesPlayedByDay = async () => {
-    const gamesPlayedByDay = await collections.games
-      ?.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: gamesPlayedByDayStart || monthAgo, $lte: gamesPlayedByDayEnd || todayEnd },
-          },
-        },
-        {
-          $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-            count: { $sum: 1 },
-          },
-        },
-        {
-          $project: {
-            _id: 0,
-            date: '$_id',
-            count: 1,
-          },
-        },
-        {
-          $sort: { date: -1 },
-        },
-      ])
-      .toArray()
-
-    return gamesPlayedByDay
+    const start = gamesPlayedByDayStart || monthAgo;
+    const end = gamesPlayedByDayEnd || todayEnd;
+    const gamesRes = await pool.query(`
+      SELECT TO_CHAR(createdat, 'YYYY-MM-DD') AS date, COUNT(*) AS count
+      FROM games
+      WHERE createdat >= $1 AND createdat <= $2
+      GROUP BY date
+      ORDER BY date DESC
+    `, [start, end]);
+    return gamesRes.rows;
   }
 
   const userId = await getUserId(req, res)

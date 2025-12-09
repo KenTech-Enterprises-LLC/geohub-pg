@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getUserId, throwError } from '@backend/utils'
+import { getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const deleteCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
@@ -10,37 +10,26 @@ const deleteCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
     return throwError(res, 400, 'You must pass a valid mapId')
   }
 
-  const mapDetails = await collections.maps?.findOne({ _id: new ObjectId(mapId) })
-
-  if (!mapDetails) {
-    return throwError(res, 400, `Failed to find map details`)
+  try {
+    // Get map details
+    const mapDetailsRes = await pool.query('SELECT creator FROM maps WHERE id = $1', [mapId]);
+    if (!mapDetailsRes.rows.length) {
+      return throwError(res, 400, `Failed to find map details`);
+    }
+    const mapDetails = mapDetailsRes.rows[0];
+    if (userId !== mapDetails.creator) {
+      return throwError(res, 401, 'You do not have permission to delete this map');
+    }
+    // Remove map as a liked map for all users
+    await pool.query('DELETE FROM maplikes WHERE mapid = $1', [mapId]);
+    // Mark map as deleted in DB
+    await pool.query('UPDATE maps SET isdeleted = true WHERE id = $1', [mapId]);
+    // Remove its locations
+    await pool.query('DELETE FROM userlocations WHERE mapid = $1', [mapId]);
+    res.status(200).send({ message: 'Map was successfully deleted' });
+  } catch (err) {
+    return throwError(res, 500, 'An unexpected error occurred while trying to delete');
   }
-
-  if (userId !== mapDetails.creator?.toString()) {
-    return throwError(res, 401, 'You do not have permission to delete this map')
-  }
-
-  // Remove map as a liked map for all users
-  await collections.mapLikes?.deleteMany({ mapId: new ObjectId(mapId) })
-
-  // Mark map as deleted in DB
-  const markMapAsDeleted = await collections.maps?.updateOne(
-    { _id: new ObjectId(mapId) },
-    { $set: { isDeleted: true } }
-  )
-
-  if (!markMapAsDeleted) {
-    return throwError(res, 400, 'An unexpected error occured while trying to delete')
-  }
-
-  // Remove it's locations
-  const deleteLocations = await collections.userLocations?.deleteMany({ mapId: new ObjectId(mapId) })
-
-  if (!deleteLocations) {
-    return throwError(res, 400, `There was a problem removing the locations from map with id: ${mapId}`)
-  }
-
-  res.status(200).send({ message: 'Map was successfully deleted' })
 }
 
 export default deleteCustomMap

@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { GlobeIcon, LocationMarkerIcon, ScaleIcon, UserIcon } from '@heroicons/react/outline'
+import { GlobeAltIcon, MapPinIcon, ScaleIcon, UserIcon } from '@heroicons/react/24/outline'
 import { DailyChallengeStatsType } from '@types'
 import { formatLargeNumber } from '@utils/helpers'
 import { StyledDailyChallengeMapStats } from './'
@@ -35,7 +35,7 @@ const DailyChallengeMapStats: FC<Props> = ({ dailyChallengeStats }) => {
 
       <div className="stat-item">
         <div className="stat-icon">
-          <LocationMarkerIcon />
+          <MapPinIcon />
         </div>
 
         <div className="textWrapper">
@@ -46,7 +46,7 @@ const DailyChallengeMapStats: FC<Props> = ({ dailyChallengeStats }) => {
 
       <div className="stat-item">
         <div className="stat-icon">
-          <GlobeIcon />
+          <GlobeAltIcon />
         </div>
 
         <div className="textWrapper">

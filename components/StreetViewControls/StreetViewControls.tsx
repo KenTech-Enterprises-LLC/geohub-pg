@@ -1,6 +1,6 @@
 import { FC, useState } from 'react'
 import { Tooltip } from '@components/system'
-import { FlagIcon, ArrowLeftIcon } from '@heroicons/react/outline'
+import { FlagIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
 import { StyledStreetViewControls } from './'
 
 type Props = {

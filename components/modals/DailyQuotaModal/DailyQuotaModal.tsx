@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from 'react'
 import { StyledDailyQuotaModal } from '.'
 import { Checkbox, Modal } from '@components/system'
-import { XIcon } from '@heroicons/react/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useAppDispatch } from '@redux/hook'
 import { dismissQuotaModal } from '@redux/slices'
@@ -37,7 +37,7 @@ const DailyQuotaModal: FC<Props> = ({ isOpen, closeModal }) => {
           <div className="header">
             <h2 className="modal-title">The Daily Quota Has Been Reached</h2>
             <button className="close-button" onClick={closeModal}>
-              <XIcon />
+              <XMarkIcon />
             </button>
           </div>
 

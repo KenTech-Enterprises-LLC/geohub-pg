@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { BadgeCheckIcon } from '@heroicons/react/solid'
+import { CheckBadgeIcon } from '@heroicons/react/24/solid'
 import { StyledVerifiedBadge } from './'
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
 const VerifiedBadge: FC<Props> = ({ size }) => {
   return (
     <StyledVerifiedBadge size={size}>
-      <BadgeCheckIcon />
+      <CheckBadgeIcon />
     </StyledVerifiedBadge>
   )
 }

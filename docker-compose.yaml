@@ -1,19 +1,15 @@
 version: "3.9"
 services:
+
   geohub:
-    image: ghcr.io/benlikescode/geohub:main
+    image: ghcr.io/KenTech-Enterprises-LLC/geohub:main
     env_file:
       - .env
+      - .env.beta
     environment:
-      MONGO_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017
+      POSTGRES_URI: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB}
     volumes:
       - .env:/usr/src/app/.env
+      - .env.beta:/usr/src/app/.env.beta
     ports:
-      - "3000:3000"
-  mongo:
-    image: mongo
-    restart: always
-    env_file:
-      - .env
-    volumes:
-      - ./database:/data/db
+      - "6789:6789"

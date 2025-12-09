@@ -1,7 +1,8 @@
-import { ObjectId } from 'mongodb'
+
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Map } from '@backend/models'
-import { collections, getUserId, throwError } from '@backend/utils'
+import { getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const createCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
   const creatorId = await getUserId(req, res)
@@ -11,28 +12,29 @@ const createCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
     return throwError(res, 400, 'A map name is required')
   }
 
-  const newMap = {
-    name,
-    description,
-    previewImg: avatar || 'https://wallpaperaccess.com/full/2707446.jpg',
-    creator: new ObjectId(creatorId),
-    createdAt: new Date(),
-    isPublished: false,
-    avgScore: 0,
-    locationCount: 0,
-    usersPlayed: 0,
-  } as Map
-
-  const result = await collections.maps?.insertOne(newMap)
-
-  if (!result) {
-    return throwError(res, 500, 'Failed to create map, please try again later')
+  try {
+    const query = `
+      INSERT INTO maps (name, description, previewimg, creator, createdat, ispublished, avgscore, locationcount, usersplayed)
+      VALUES ($1, $2, $3, $4, NOW(), false, 0, 0, 0)
+      RETURNING id;
+    `;
+    const values = [
+      name,
+      description,
+      avatar || 'https://wallpaperaccess.com/full/2707446.jpg',
+      creatorId,
+    ];
+    const result = await pool.query(query, values);
+    if (!result.rows.length) {
+      return throwError(res, 500, 'Failed to create map, please try again later');
+    }
+    res.status(201).send({
+      mapId: result.rows[0].id,
+      message: 'Successfully created map',
+    });
+  } catch (err) {
+    return throwError(res, 500, 'Database error creating map');
   }
-
-  res.status(201).send({
-    mapId: result.insertedId,
-    message: 'Successfully created map',
-  })
 }
 
 export default createCustomMap

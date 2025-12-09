@@ -1,40 +1,30 @@
 import { TopScore } from '@backend/models'
-import { collections } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const queryTopScores = async (query: any, limit: number) => {
-  const data = await collections.games
-    ?.aggregate([
-      // Match the documents
-      { $match: { ...query, notForLeaderboard: { $ne: true } } },
-      // Sort the matches in descending order
-      { $sort: { totalPoints: -1, totalTime: 1 } },
-      // Group by unique userId, getting the first document
-      // (We know that the first will be the highest, due to the sort)
-      {
-        $group: {
-          _id: '$userId',
-          gameId: { $first: '$_id' },
-          totalTime: { $first: '$totalTime' },
-          totalPoints: { $first: '$totalPoints' },
-        },
-      },
-      // Re-sort the resulting documents
-      { $sort: { totalPoints: -1, totalTime: 1 } },
-      { $limit: limit },
-      // Format the result
-      {
-        $project: {
-          _id: 0,
-          gameId: '$gameId',
-          userId: '$_id',
-          totalPoints: 1,
-          totalTime: 1,
-        },
-      },
-    ])
-    .toArray()
+  // Build WHERE clause from query object
+  const whereClauses = []
+  const values: any[] = []
+  let idx = 1
+  for (const key in query) {
+    whereClauses.push(`${key} = $${idx}`)
+    values.push(query[key])
+    idx++
+  }
+  whereClauses.push('not_for_leaderboard != true')
+  const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : ''
 
-  return data as TopScore[] | undefined
+  // SQL: Get top score per user, sorted, limited
+  const sql = `
+    SELECT DISTINCT ON (user_id) id AS gameId, user_id AS userId, total_points AS totalPoints, total_time AS totalTime
+    FROM games
+    ${whereSQL}
+    ORDER BY user_id, total_points DESC, total_time ASC
+    LIMIT $${idx}
+  `
+  values.push(limit)
+  const res = await pool.query(sql, values)
+  return res.rows as TopScore[]
 }
 
 export default queryTopScores

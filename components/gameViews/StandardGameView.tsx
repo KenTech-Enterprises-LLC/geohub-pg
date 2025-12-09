@@ -4,7 +4,7 @@ import { StandardFinalResults, StandardResults } from '@components/resultCards'
 import { ResultMap } from '@components/ResultMap'
 import { LeaderboardCard } from '@components/Results'
 import { StreetView } from '@components/StreetView'
-import { ChevronLeftIcon } from '@heroicons/react/outline'
+import { ChevronLeftIcon } from '@heroicons/react/24/outline'
 import { GameViewType, MapType } from '@types'
 import { StyledGameView } from './'
 

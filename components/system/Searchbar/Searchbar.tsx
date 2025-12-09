@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import { FC, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-import { SearchIcon } from '@heroicons/react/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import { SearchResultType } from '@types'
 import { KEY_CODES } from '@utils/constants/keyCodes'
@@ -156,7 +156,7 @@ const Searchbar: FC<Props> = ({ placeholder, autoFocus, isSmall, onClickOutside 
           onClick={() => setIsFocused(true)}
         />
         <button className="searchBtn" onClick={() => handleSearch()}>
-          <SearchIcon />
+          <MagnifyingGlassIcon />
         </button>
       </div>
 

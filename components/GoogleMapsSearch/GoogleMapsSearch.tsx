@@ -1,5 +1,5 @@
 import { FC, useEffect, useRef, useState } from 'react'
-import { SearchIcon } from '@heroicons/react/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { GoogleMapsConfigType, LocationType } from '@types'
 import { useClickOutside } from '@utils/hooks'
 import { StyledGoogleMapsSearch } from './'
@@ -177,7 +177,7 @@ const GoogleMapsSearch: FC<Props> = ({ placeholder, autoFocus, googleMapsConfig,
           value={query}
         />
         <div className="search-icon">
-          <SearchIcon />
+          <MagnifyingGlassIcon />
         </div>
       </div>
 

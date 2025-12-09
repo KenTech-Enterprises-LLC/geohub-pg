@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from 'react'
 import { Input } from '@components/system'
-import { CheckIcon, ClipboardIcon } from '@heroicons/react/outline'
+import { CheckIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline'
 import { StyledChallenge } from './'
 
 type Props = {
@@ -41,7 +41,7 @@ const Challenge: FC<Props> = ({ challengeId }) => {
 
         <div className="copyBtnWrapper">
           <button className="copyBtn" onClick={() => handleCopy()}>
-            {isCopied ? <CheckIcon className="check" /> : <ClipboardIcon />}
+            {isCopied ? <CheckIcon className="check" /> : <ClipboardDocumentIcon />}
           </button>
         </div>
       </div>

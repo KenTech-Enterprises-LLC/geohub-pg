@@ -1,43 +1,26 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, throwError } from '@backend/utils'
+import { throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const getDailyChallengeWinners = async (req: NextApiRequest, res: NextApiResponse) => {
-  const winners = await collections.challenges
-    ?.aggregate([
-      { $match: { isDailyChallenge: true, winner: { $exists: true } } },
-      { $sort: { createdAt: -1 } },
-      { $limit: 7 },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'winner.userId',
-          foreignField: '_id',
-          as: 'userDetails',
-        },
-      },
-      {
-        $unwind: '$userDetails',
-      },
-      {
-        $project: {
-          _id: 1,
-          totalPoints: '$winner.totalPoints',
-          totalTime: '$winner.totalTime',
-          gameId: '$winner.gameId',
-          createdAt: 1,
-          userId: '$userDetails._id',
-          userName: '$userDetails.name',
-          userAvatar: '$userDetails.avatar',
-        },
-      },
-    ])
-    .toArray()
-
-  if (!winners) {
-    return throwError(res, 400, 'Failed to get recent winners')
+  try {
+    const winnersRes = await pool.query(`
+      SELECT c.id, c.createdat, c.winner_totalpoints AS totalPoints, c.winner_totaltime AS totalTime, c.winner_gameid AS gameId,
+             u.id AS userId, u.name AS userName, u.avatar AS userAvatar
+      FROM challenges c
+      JOIN users u ON c.winner_userid = u.id
+      WHERE c.isdailychallenge = true AND c.winner_userid IS NOT NULL
+      ORDER BY c.createdat DESC
+      LIMIT 7
+    `);
+    const winners = winnersRes.rows;
+    if (!winners) {
+      return throwError(res, 400, 'Failed to get recent winners');
+    }
+    res.status(200).send(winners);
+  } catch (err) {
+    return throwError(res, 500, 'Database error retrieving daily challenge winners');
   }
-
-  res.status(200).send(winners)
 }
 
 export default getDailyChallengeWinners

@@ -1,13 +1,13 @@
 /* eslint-disable import/no-anonymous-default-export */
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect, getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
+import { getUserId, throwError } from '@backend/utils'
 import { BACKGROUND_COLORS, EMOJIS } from '@utils/constants/avatarOptions'
 import { GUEST_ACCOUNT_ID } from '@utils/constants/random'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // dbConnect not needed for pg
 
     if (req.method === 'POST') {
       const { _id, name, bio, avatar } = req.body
@@ -27,15 +27,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       // Ensure new name is not already taken
-      const findUserWithName = await collections.users?.findOne({ _id: { $ne: new ObjectId(userId) }, name: name })
-
-      if (findUserWithName) {
-        return throwError(res, 400, `The name ${name} is already taken`)
+      const nameRes = await pool.query('SELECT id FROM users WHERE id != $1 AND name = $2', [userId, name]);
+      if (nameRes.rows.length > 0) {
+        return throwError(res, 400, `The name ${name} is already taken`);
       }
-
-      await collections.users?.updateOne({ _id: new ObjectId(_id) }, { $set: { name: name, bio: bio, avatar: avatar } })
-
-      res.status(200).send({ status: 'ok' })
+      await pool.query('UPDATE users SET name = $1, bio = $2, avatar = $3 WHERE id = $4', [name, bio, avatar, _id]);
+      res.status(200).send({ status: 'ok' });
     } else {
       res.status(405).end(`Method ${req.method} Not Allowed`)
     }

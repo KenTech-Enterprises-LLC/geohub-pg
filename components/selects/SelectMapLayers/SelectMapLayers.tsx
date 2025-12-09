@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { CheckIcon, SelectorIcon } from '@heroicons/react/outline'
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import * as Select from '@radix-ui/react-select'
 import { StyledSelectMapLayers } from './'
 
@@ -30,7 +30,7 @@ const SelectMapLayers: FC<Props> = ({ selectionMap }) => {
         <Select.Trigger className="SelectTrigger" aria-label="Selection Map Layer Customization">
           <Select.Value placeholder={OVERLAY_OPTIONS[0]} />
           <Select.Icon className="SelectIcon">
-            <SelectorIcon />
+            <ChevronDownIcon />
           </Select.Icon>
         </Select.Trigger>
 

@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { CheckIcon, SelectorIcon } from '@heroicons/react/outline'
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline'
 import * as Select from '@radix-ui/react-select'
 import { StreetViewCoverageType } from '@types'
 import { StyledSelectCoverage } from './'
@@ -18,7 +18,7 @@ const SelectCoverage: FC<Props> = ({ coverageOptions, onChange }) => {
         <Select.Trigger className="SelectTrigger" aria-label="Streetview Coverage">
           <Select.Value placeholder={currentPanorama?.date} />
           <Select.Icon className="SelectIcon">
-            <SelectorIcon />
+            <ChevronDownIcon />
           </Select.Icon>
         </Select.Trigger>
 

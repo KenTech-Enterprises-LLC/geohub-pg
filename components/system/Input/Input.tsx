@@ -1,5 +1,5 @@
 import { FC, useState } from 'react'
-import { EyeIcon, EyeOffIcon } from '@heroicons/react/outline'
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { StyledInput } from './'
 
 type Props = {
@@ -78,7 +78,7 @@ const Input: FC<Props> = ({
 
           {type === 'password' && value && (
             <button className="input-icon" type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              {showPassword ? <EyeSlashIcon /> : <EyeIcon />}
             </button>
           )}
         </div>

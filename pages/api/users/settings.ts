@@ -1,8 +1,8 @@
 import Cryptr from 'cryptr'
 /* eslint-disable import/no-anonymous-default-export */
-import { ObjectId } from 'mongodb'
+// Removed ObjectId, not needed for PostgreSQL
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect, getUserId, throwError } from '@backend/utils'
+import { getUserId, throwError, pool } from '@backend/utils'
 import { GUEST_ACCOUNT_ID } from '@utils/constants/random'
 
 const ALLOWED_DISTANCE_UNITS = ['metric', 'imperial']
@@ -12,23 +12,21 @@ const cryptr = new Cryptr(process.env.CRYPTR_SECRET as string)
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     if (req.method === 'GET') {
       const userId = await getUserId(req, res)
 
-      const user = await collections.users?.findOne({ _id: new ObjectId(userId) })
-
+      const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+      const user = userRes.rows[0];
       if (!user) {
-        return throwError(res, 500, 'Failed to get user details.')
+        return throwError(res, 500, 'Failed to get user details.');
       }
-
-      const decrypedMapsAPIKey = user.mapsAPIKey ? cryptr.decrypt(user.mapsAPIKey) : ''
-
+      const decrypedMapsAPIKey = user.mapsapikey ? cryptr.decrypt(user.mapsapikey) : '';
       return res.status(200).send({
-        distanceUnit: user.distanceUnit,
+        distanceUnit: user.distanceunit,
         mapsAPIKey: decrypedMapsAPIKey,
-      })
+      });
     }
 
     if (req.method === 'POST') {
@@ -54,18 +52,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const safeDistance = distanceUnit ?? 'metric'
       const safeMapsKey = mapsAPIKey ? cryptr.encrypt(mapsAPIKey) : ''
 
-      const updateSettings = await collections.users?.updateOne(
-        { _id: new ObjectId(userId) },
-        { $set: { distanceUnit: safeDistance, mapsAPIKey: safeMapsKey } }
-      )
-
-      if (!updateSettings) {
-        return throwError(res, 500, 'There was an unexpected problem while updating your settings.')
+      const updateRes = await pool.query('UPDATE users SET distanceunit = $1, mapsapikey = $2 WHERE id = $3', [safeDistance, safeMapsKey, userId]);
+      if (updateRes.rowCount === 0) {
+        return throwError(res, 500, 'There was an unexpected problem while updating your settings.');
       }
-
-      res.status(200).send({ status: 'ok' })
-    } else {
-      res.status(405).end(`Method ${req.method} Not Allowed`)
+      return res.status(200).json({ success: true });
     }
   } catch (err) {
     console.error(err)

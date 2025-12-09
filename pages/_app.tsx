@@ -1,4 +1,5 @@
 import '@styles/globals.css'
+
 import { SessionProvider } from 'next-auth/react'
 import { ReactElement } from 'react'
 import { Toaster } from 'react-hot-toast'
@@ -16,18 +17,24 @@ type AppPropsWithLayout = AppProps & {
   Component: PageType
 }
 
+if (process.env.BETA_MODE === 'true') {
+  require('@styles/beta.css')
+}
+
 const App = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = (page: ReactElement) => (Component.noLayout ? page : <Layout>{page}</Layout>)
 
   return (
     <>
+      {process.env.BETA_MODE === 'true' && (
+        <div className="beta-banner">Beta Mode Enabled</div>
+      )}
       <Meta />
       <SessionProvider>
         <RedudxProvider store={store}>
           <PersistGate persistor={persistor}>
             <ThemeProvider theme={theme}>
               {getLayout(<Component {...pageProps} />)}
-
               <Toaster
                 position="bottom-right"
                 toastOptions={{

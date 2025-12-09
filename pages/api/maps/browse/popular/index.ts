@@ -1,11 +1,11 @@
 /* eslint-disable import/no-anonymous-default-export */
-import { ObjectId } from 'mongodb'
+// Removed ObjectId, not needed for PostgreSQL
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect, throwError } from '@backend/utils'
+import { throwError, pool } from '@backend/utils'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     // HALP -> Sort maps by most liked -> going to need to query the mapLikes collection
     const countQuery = req.query.count as string
@@ -13,20 +13,22 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     const mapId = req.query.mapId as string
 
     if (req.method === 'GET') {
-      const maps = await collections.maps
-        ?.find({
-          _id: { $ne: new ObjectId(mapId) },
-          isPublished: true,
-          isDeleted: { $exists: false },
-        })
-        .limit(mapCount || 3)
-        .toArray()
-
-      if (!maps) {
-        return throwError(res, 400, 'Failed to get popular maps')
+      // Migrate MongoDB query to PostgreSQL
+      try {
+        const limit = mapCount || 3;
+        // Exclude the map with mapId, filter published and not deleted
+        const result = await pool.query(
+          `SELECT * FROM maps WHERE id != $1 AND isPublished = true AND (isDeleted IS NULL OR isDeleted = false) ORDER BY like_count DESC LIMIT $2`,
+          [mapId, limit]
+        );
+        const maps = result.rows;
+        if (!maps) {
+          return throwError(res, 400, 'Failed to get popular maps');
+        }
+        res.status(200).send(maps);
+      } catch (err) {
+        return throwError(res, 500, 'Database error');
       }
-
-      res.status(200).send(maps)
     } else {
       res.status(405).end(`Method ${req.method} Not Allowed`)
     }

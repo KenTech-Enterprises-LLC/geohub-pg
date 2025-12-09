@@ -1,6 +1,6 @@
 import { FC, ReactNode } from 'react'
 import { Button, Modal, Spinner } from '@components/system'
-import { XIcon } from '@heroicons/react/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { StyledMainModal } from './'
 
 type Props = {
@@ -34,7 +34,7 @@ const MainModal: FC<Props> = ({
         <div className="modal-header">
           <h1 className="modal-title">{title}</h1>
           <button className="close-button" onClick={onClose}>
-            <XIcon />
+            <XMarkIcon />
           </button>
         </div>
         <div className="modal-body">{children}</div>

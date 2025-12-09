@@ -2,11 +2,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import createChallengeGame from '@backend/routes/challenges/createChallengeGame'
 import getChallenge from '@backend/routes/challenges/getChallenge'
-import { dbConnect, throwError } from '@backend/utils'
+import { throwError } from '@backend/utils'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     switch (req.method) {
       case 'GET':

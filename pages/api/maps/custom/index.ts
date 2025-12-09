@@ -2,11 +2,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import createCustomMap from '@backend/routes/maps/createCustomMap'
 import getCustomMaps from '@backend/routes/maps/getCustomMaps'
-import { dbConnect } from '@backend/utils'
+// Removed dbConnect, not needed for PostgreSQL
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     switch (req.method) {
       case 'GET':

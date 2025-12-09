@@ -2,7 +2,7 @@
 import GoogleMapReact from 'google-map-react'
 import { FC, useEffect, useRef, useState } from 'react'
 import { Button } from '@components/system'
-import { ArrowRightIcon, XIcon } from '@heroicons/react/outline'
+import { ArrowRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon'
 import { multiPolygon, polygon } from '@turf/helpers'
@@ -13,7 +13,7 @@ import { POLYGON_STYLES } from '@utils/constants/polygonStyles'
 import { formatPolygon, getMapsKey } from '@utils/helpers'
 import useGuessMap from '@utils/hooks/useGuessMap'
 import { StyledStreaksGuessMap } from './'
-import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/solid'
+import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/24/solid'
 
 type Props = {
   countryStreakGuess: string
@@ -172,7 +172,7 @@ const StreaksGuessMap: FC<Props> = ({
         </div>
 
         <button className="close-map-button" onClick={closeMobileMap}>
-          <XIcon />
+          <XMarkIcon />
         </button>
 
         <div className="submit-button-wrapper">

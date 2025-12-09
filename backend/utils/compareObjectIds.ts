@@ -1,11 +1,8 @@
-import { ObjectId } from 'mongodb'
-
-const compareObjectIds = (objectId1: string | ObjectId | undefined, objectId2: string | ObjectId | undefined) => {
-  if (!objectId1 || !objectId2) {
+const compareIds = (id1: string | number | undefined, id2: string | number | undefined) => {
+  if (!id1 || !id2) {
     return false
   }
-
-  return objectId1.toString() === objectId2.toString()
+  return id1.toString() === id2.toString()
 }
 
-export default compareObjectIds
+export default compareIds

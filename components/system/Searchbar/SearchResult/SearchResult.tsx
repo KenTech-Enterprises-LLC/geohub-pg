@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { FC } from 'react'
 import { Avatar, FlexGroup } from '@components/system'
-import { SearchIcon } from '@heroicons/react/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { SearchResultType } from '@types'
 import { mailman } from '@utils/helpers'
 import { StyledSearchResult } from './'
@@ -67,7 +67,7 @@ const SearchResult: FC<Props> = ({ searchResult, hasNoResults, setIsFocused }) =
           <a className="linkWrapper" onClick={() => handleResultClick()}>
             <FlexGroup gap={12}>
               <div className="termAvatar">
-                <SearchIcon height={18} color="#888" />
+                <MagnifyingGlassIcon height={18} color="#888" />
               </div>
               <div className="searchResultLabelWrapper">
                 <span className="searchResultLabel">

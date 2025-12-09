@@ -1,11 +1,11 @@
 /* eslint-disable import/no-anonymous-default-export */
 import { NextApiRequest, NextApiResponse } from 'next'
 import getAnalytics from '@backend/routes/getAnalytics'
-import { dbConnect } from '@backend/utils'
+import { pool } from '@backend/utils'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool is already connected; no need to call dbConnect
 
     switch (req.method) {
       case 'GET':

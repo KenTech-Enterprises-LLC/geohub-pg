@@ -30,9 +30,12 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 .env
+.env.beta
 
 # vercel
 .vercel
+
+#package-lock.json
 
 # docker volumes
 database/

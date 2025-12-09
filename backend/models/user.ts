@@ -1,7 +1,5 @@
-import { ObjectId } from 'mongodb'
-
 type User = {
-  id: ObjectId
+  id: string | number
   name: string
   bio?: string
   email: string

@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+
 
 export type BanType = {
   start: Date
@@ -9,8 +9,8 @@ export type BanType = {
 }
 
 type UserBans = {
-  _id: ObjectId
-  userId: ObjectId
+  _id: string
+  userId: string
   isBanned: boolean
   bans: BanType[]
 }

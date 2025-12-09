@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 /* eslint-disable import/no-anonymous-default-export */
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect, throwError } from '@backend/utils'
+import { pool, throwError } from '@backend/utils'
 import sendEmail from '@backend/utils/sendEmail'
 
 const generateUrlSafeToken = () => {
@@ -16,7 +16,7 @@ const generateUrlSafeToken = () => {
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     const SUCCESS_RESPONSE = { message: 'Successfully sent reset email' }
 
@@ -33,7 +33,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         return throwError(res, 400, 'Invalid email address')
       }
 
-      const user = await collections.users?.findOne({ email })
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email])
+      const user = result.rows[0]
 
       // Skip email but show success to protect privacy
       if (!user) {
@@ -47,13 +48,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const hashedToken = crypto.createHash('sha256').update(token).digest('hex')
       const tokenExpires = new Date(new Date().getTime() + 1000 * 60 * 60 * 24)
 
-      const storeToken = await collections.passwordResets?.insertOne({
-        userId: user._id,
-        token: hashedToken,
-        expires: tokenExpires,
-      })
-
-      if (!storeToken) {
+      // Store hashed token and expiry in users table
+      const updateResult = await pool.query(
+        'UPDATE users SET resetToken = $1, resetTokenExpiry = $2 WHERE email = $3',
+        [hashedToken, tokenExpires, email]
+      )
+      if (updateResult.rowCount === 0) {
         return throwError(res, 500, 'Failed to generate email token')
       }
 

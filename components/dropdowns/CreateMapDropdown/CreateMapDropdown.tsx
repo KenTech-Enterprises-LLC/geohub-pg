@@ -2,7 +2,7 @@ import saveAs from 'file-saver'
 import { useRouter } from 'next/router'
 import { ChangeEvent, FC, useState } from 'react'
 import { DestroyModal } from '@components/modals'
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline'
 import { Content, Item, Portal, Root, Separator, Trigger } from '@radix-ui/react-dropdown-menu'
 import { LocationType } from '@types'
 import { mailman, parseJsonFile, showToast } from '@utils/helpers'
@@ -133,7 +133,7 @@ const CreateMapDropdown: FC<Props> = ({ locations, clearLocations, addNewLocatio
         <Root>
           <Trigger asChild>
             <button className="trigger-button" aria-label="More options">
-              <DotsHorizontalIcon />
+              <EllipsisHorizontalIcon />
             </button>
           </Trigger>
 

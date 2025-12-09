@@ -1,7 +1,7 @@
 import Image from 'next/image'
 /* eslint-disable @next/next/no-img-element */
 import { FC, useState } from 'react'
-import { CheckIcon } from '@heroicons/react/outline'
+import { CheckIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import { BACKGROUND_COLORS, EMOJIS } from '@utils/constants/avatarOptions'
 import { USER_AVATAR_PATH } from '@utils/constants/random'

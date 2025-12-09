@@ -1,18 +1,15 @@
-import { ObjectId } from 'mongodb'
-import { collections } from '@backend/utils'
+import { db } from './db'
 
-const isUserAnAdmin = async (userId?: string) => {
+
+const isUserAnAdmin = async (userId?: string | number) => {
   if (!userId) {
     return false
   }
-
-  const user = await collections.users?.findOne({ _id: new ObjectId(userId) })
-
+  const user = await db.getUserById(userId)
   if (!user) {
     return false
   }
-
-  return user.isAdmin
+  return user.is_admin || false
 }
 
 export default isUserAnAdmin

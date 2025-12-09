@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import { FC } from 'react'
 import { Avatar, FlexGroup } from '@components/system'
-import { ChartBarIcon } from '@heroicons/react/outline'
-import { LightningBoltIcon } from '@heroicons/react/solid'
+import { ChartBarIcon } from '@heroicons/react/24/outline'
+import { BoltIcon } from '@heroicons/react/24/solid'
 import { MapLeaderboardType, UserGameHistoryType } from '@types'
 import { formatLargeNumber, formatRoundTime } from '@utils/helpers'
 import { StyledLeaderboardItem } from './'
@@ -78,7 +78,7 @@ const LeaderboardItem: FC<Props> = ({ finishPlace, row, removeResults }) => {
 
         {row.streak && (
           <div className="bestStreakWrapper">
-            <LightningBoltIcon />
+            <BoltIcon />
             <span className="bestStreak">{row.streak}</span>
           </div>
         )}

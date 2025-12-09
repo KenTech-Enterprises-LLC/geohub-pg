@@ -5,7 +5,7 @@ import { GuessMap } from '@components/GuessMap'
 import { LoadingPage } from '@components/layout'
 import { StreaksGuessMap } from '@components/StreaksGuessMap'
 import { StreetViewControls } from '@components/StreetViewControls'
-import { MapIcon } from '@heroicons/react/outline'
+import { MapIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import { GameViewType, GoogleMapsConfigType, LocationType } from '@types'
 import { getStreetviewOptions } from '@utils/constants/googleMapOptions'
@@ -138,7 +138,7 @@ const Streetview: FC<Props> = ({ gameData, setGameData, view, setView }) => {
     }
 
     // don't store repeated movements (e.g. return to start)
-    if (undo.length < 1 || !compareLocs(loc, undo.at(-1))) undo.push(loc)
+    if (undo.length < 1 || !compareLocs(loc, undo[undo.length - 1])) undo.push(loc)
   }
 
   const handleSubmitGuess = async (timedOut?: boolean) => {

@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from 'react'
 import { Game } from '@backend/models'
-import { LightningBoltIcon } from '@heroicons/react/solid'
+import { BoltIcon } from '@heroicons/react/24/solid'
 import { formatLargeNumber, formatStatusTimer } from '@utils/helpers'
 import { StyledGameStatus } from './'
 
@@ -77,7 +77,7 @@ const GameStatus: FC<Props> = ({ gameData, handleSubmitGuess, hasCustomRoundLeng
       {gameData.mode === 'streak' && (
         <>
           <div className="streak-section">
-            <LightningBoltIcon />
+            <BoltIcon />
             {gameData.streak}
           </div>
 

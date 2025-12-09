@@ -1,12 +1,11 @@
-import { ObjectId } from 'mongodb'
 import { LocationType } from '@types'
 
 type Map = {
-  _id?: ObjectId
+  _id?: string | number
   name: string
   description?: string
   previewImg: string
-  creator: 'GeoHub' | ObjectId
+  creator: 'GeoHub' | string | number
   isPublished?: boolean
   isDeleted?: boolean
   createdAt?: Date

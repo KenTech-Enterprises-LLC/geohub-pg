@@ -1,7 +1,7 @@
 import { FC, useState } from 'react'
 import { AuthModal } from '@components/modals'
-import { HeartIcon as HeartIconOutline, LocationMarkerIcon, ScaleIcon, UserIcon } from '@heroicons/react/outline'
-import { HeartIcon as HeartIconSolid } from '@heroicons/react/solid'
+import { HeartIcon as HeartIconOutline, MapPinIcon, ScaleIcon, UserIcon } from '@heroicons/react/24/outline'
+import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid'
 import { useAppSelector } from '@redux/hook'
 import { MapType } from '@types'
 import { formatLargeNumber, mailman } from '@utils/helpers'
@@ -61,7 +61,7 @@ const MapStats: FC<Props> = ({ map, setMap }) => {
 
       <div className="stat-item">
         <div className="stat-icon">
-          <LocationMarkerIcon />
+          <MapPinIcon />
         </div>
 
         <div className="textWrapper">

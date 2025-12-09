@@ -1,9 +1,9 @@
-import { ObjectId } from 'mongodb'
-import { NextApiRequest, NextApiResponse } from 'next'
-import { calculateMapScoreFactor, collections, getMapBounds, getUserId, throwError } from '@backend/utils'
+import { calculateMapScoreFactor, getMapBounds, getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 import { LocationType } from '@types'
 import { MAX_ALLOWED_CUSTOM_LOCATIONS } from '@utils/constants/random'
 import { formatLargeNumber } from '@utils/helpers'
+import { NextApiRequest, NextApiResponse } from 'next'
 
 type ReqBody = {
   name?: string
@@ -29,8 +29,10 @@ const updateCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
     return throwError(res, 400, 'You must pass a valid mapId')
   }
 
-  const mapDetails = await collections.maps?.findOne({ _id: new ObjectId(mapId) })
 
+  // Fetch map details from PostgreSQL
+  const mapRes = await pool.query('SELECT * FROM maps WHERE id = $1', [mapId])
+  const mapDetails = mapRes.rows[0]
   if (!mapDetails) {
     return throwError(res, 400, `Failed to find map details`)
   }
@@ -66,8 +68,20 @@ const updateCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
 
   updatedMap.lastUpdatedAt = new Date()
 
-  const result = await collections.maps?.findOneAndUpdate({ _id: new ObjectId(mapId) }, { $set: updatedMap })
 
+  // Update map details in PostgreSQL
+  const updateFields = []
+  const updateValues = []
+  let idx = 1
+  for (const key in updatedMap) {
+    updateFields.push(`${key} = $${idx}`)
+    updateValues.push((updatedMap as any)[key])
+    idx++
+  }
+  updateValues.push(mapId)
+  const updateSQL = `UPDATE maps SET ${updateFields.join(', ')} WHERE id = $${idx} RETURNING *`
+  const updateRes = await pool.query(updateSQL, updateValues)
+  const result = updateRes.rows[0]
   if (!result) {
     return throwError(res, 400, 'Could not update map details')
   }
@@ -78,37 +92,35 @@ const updateCustomMap = async (req: NextApiRequest, res: NextApiResponse) => {
       return throwError(res, 400, `The max locations allowed is ${formatLargeNumber(MAX_ALLOWED_CUSTOM_LOCATIONS)}`)
     }
 
-    // Removes old locations
-    const removeResult = await collections.userLocations?.deleteMany({ mapId: new ObjectId(mapId) })
 
-    if (!removeResult) {
-      return throwError(res, 400, 'Something went wrong updating locations')
-    }
+    // Removes old locations in PostgreSQL
+    const removeRes = await pool.query('DELETE FROM user_locations WHERE map_id = $1', [mapId])
+    // Optionally check removeRes.rowCount if you want to ensure something was deleted
 
     // Attach mapId to each location
     locations.map((location) => {
-      location.mapId = new ObjectId(mapId)
+      location.mapId = mapId
     })
 
     // Finally insert the new locations (if not empty)
     if (locations.length > 0) {
-      const result = await collections.userLocations?.insertMany(locations)
-
-      if (!result) {
-        return throwError(res, 400, 'Could not add locations')
-      }
+      // Bulk insert locations into user_locations table
+      const values = locations.map(loc => `('${mapId}', ${loc.lat}, ${loc.lng}, '${loc.countryCode}')`).join(', ');
+      const insertSQL = `INSERT INTO user_locations (map_id, lat, lng, countrycode) VALUES ${values}`;
+      await pool.query(insertSQL);
 
       // Update map's score factor (since locations have changed)
       const newBounds = getMapBounds(locations)
       const newScoreFactor = calculateMapScoreFactor(newBounds)
 
-      const updateMap = await collections.maps?.updateOne(
-        { _id: new ObjectId(mapId) },
-        { $set: { bounds: newBounds, scoreFactor: newScoreFactor, locationCount: locations.length } }
+      // Update map's score factor and bounds in PostgreSQL
+      const updateMapRes = await pool.query(
+        'UPDATE maps SET scorefactor = $1, bounds = $2 WHERE id = $3 RETURNING *',
+        [newScoreFactor, JSON.stringify(newBounds), mapId]
       )
-
+      const updateMap = updateMapRes.rows[0]
       if (!updateMap) {
-        return throwError(res, 400, 'Failed to save new map score factor')
+        return throwError(res, 400, 'Could not update map score factor')
       }
     }
   }

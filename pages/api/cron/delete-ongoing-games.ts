@@ -1,6 +1,6 @@
 /* eslint-disable import/no-anonymous-default-export */
 import { NextApiRequest, NextApiResponse } from 'next'
-import { dbConnect, throwError } from '@backend/utils'
+import { throwError } from '@backend/utils'
 import deleteOngoingGames from '@backend/routes/cron/deleteOngoingGames'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
@@ -11,7 +11,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       return throwError(res, 401, 'Unauthorized')
     }
 
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     return deleteOngoingGames(req, res)
   } catch (err) {

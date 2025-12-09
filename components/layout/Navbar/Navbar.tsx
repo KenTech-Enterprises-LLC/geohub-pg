@@ -2,7 +2,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { FC, useState } from 'react'
 import { Avatar, Button, Searchbar } from '@components/system'
-import { SearchIcon } from '@heroicons/react/outline'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '../../../redux-utils'
 import { AppLogo } from '../../AppLogo'
 import { StyledNavbar } from './'
@@ -36,7 +36,7 @@ const Navbar: FC = () => {
           <div className="rightContainer">
             <div className="rightWrapper">
               <button className="mobile-search" onClick={() => setSearchOpen(true)}>
-                <SearchIcon />
+                <MagnifyingGlassIcon />
               </button>
 
               {session && user.id ? (

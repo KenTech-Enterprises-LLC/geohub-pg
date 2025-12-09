@@ -1,8 +1,8 @@
-import { ObjectId } from 'mongodb'
+
 import { DistanceType, GameSettingsType, GuessType, LocationType, MapType } from '.'
 
 type Game = {
-  id: ObjectId | string
+  id: string
   _id?: string // replace id with _id throughout app
   mapId: string
   mapName?: string

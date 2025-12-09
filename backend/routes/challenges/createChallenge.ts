@@ -1,6 +1,6 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getLocations, getUserId } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
+import { getLocations, getUserId } from '@backend/utils'
 
 const createChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
@@ -14,21 +14,31 @@ const createChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const newChallenge = {
-    mapId: mode === 'standard' ? new ObjectId(mapId) : mapId,
-    creatorId: new ObjectId(userId),
+    mapId,
+    creatorId: userId,
     mode,
     gameSettings,
     locations,
   }
-
-  // Create Challenge
-  const result = await collections.challenges?.insertOne(newChallenge)
-
-  if (!result) {
+  // Insert challenge into PostgreSQL
+  const insertSQL = `
+    INSERT INTO challenges (map_id, creator_id, mode, game_settings, locations)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id
+  `
+  const values = [
+    newChallenge.mapId,
+    newChallenge.creatorId,
+    newChallenge.mode,
+    JSON.stringify(newChallenge.gameSettings),
+    JSON.stringify(newChallenge.locations),
+  ]
+  try {
+    const result = await pool.query(insertSQL, values)
+    res.status(201).send(result.rows[0].id)
+  } catch (err) {
     return res.status(500).send('Failed to create a new challenge.')
   }
-
-  res.status(201).send(result.insertedId)
 }
 
 export default createChallenge

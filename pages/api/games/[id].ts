@@ -3,11 +3,11 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import deleteGame from '@backend/routes/games/deleteGame'
 import getGame from '@backend/routes/games/getGame'
 import updateGame from '@backend/routes/games/updateGame'
-import { dbConnect } from '@backend/utils'
+// Removed dbConnect, not needed for PostgreSQL
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     switch (req.method) {
       case 'GET':

@@ -1,84 +1,47 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getUserId, throwError } from '@backend/utils'
-
-const getUserDetailsHelper = async (userId: ObjectId) => {
-  const userDetails = await collections.users?.findOne({ _id: userId })
-
-  if (!userDetails) return null
-
-  const result = {
-    _id: userDetails._id,
-    name: userDetails.name,
-    avatar: userDetails.avatar,
-  }
-
-  return result
-}
-
-const getMapDetailsHelper = async (mapId: ObjectId) => {
-  const mapDetails = await collections.maps?.findOne({ _id: mapId })
-
-  if (!mapDetails) return null
-
-  const result = {
-    _id: mapDetails._id,
-    name: mapDetails.name,
-    previewImg: mapDetails.previewImg,
-  }
-
-  return result
-}
+import { getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 // Gets the 5 most recent searches from this user
 const getRecentSearches = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
-
-  const recentSearches = await collections.recentSearches?.findOne({ userId: new ObjectId(userId) })
-
-  if (!recentSearches || !recentSearches.searches) {
-    return throwError(res, 400, `Failed to find recent searches for user with id: ${userId}`)
-  }
-
-  type Result = {
-    type: 'term' | 'user' | 'map'
-    term?: string
-    _id?: ObjectId
-    name?: string
-    avatar?: { emoji: string; color: string }
-    previewImg?: string
-  }
-
-  const result: Result[] = []
-
-  for (const search of recentSearches.searches) {
-    const type = search.type
-
-    if (type === 'term') {
-      // Add term to result if unique
-      if (!result.some((x) => x.term === search.term)) {
-        result.push({ type, term: search.term })
+  try {
+    // Get recent searches for user
+    const searchesRes = await pool.query(
+      'SELECT * FROM recentsearches WHERE userid = $1 ORDER BY createdat DESC LIMIT 5',
+      [userId]
+    );
+    const searches = searchesRes.rows;
+    if (!searches || searches.length === 0) {
+      return throwError(res, 400, `Failed to find recent searches for user with id: ${userId}`);
+    }
+    // Build result array
+    const result: any[] = [];
+    for (const search of searches) {
+      if (search.type === 'term') {
+        if (!result.some((x) => x.term === search.term)) {
+          result.push({ type: 'term', term: search.term });
+        }
+      } else if (search.type === 'user') {
+        // Get user details
+        const userRes = await pool.query('SELECT id, name, avatar FROM users WHERE id = $1', [search.searcheduserid]);
+        const userDetails = userRes.rows[0];
+        if (userDetails && !result.some((x) => x._id === userDetails.id)) {
+          result.push({ type: 'user', _id: userDetails.id, name: userDetails.name, avatar: userDetails.avatar });
+        }
+      } else if (search.type === 'map') {
+        // Get map details
+        const mapRes = await pool.query('SELECT id, name, previewimg FROM maps WHERE id = $1', [search.searchedmapid]);
+        const mapDetails = mapRes.rows[0];
+        if (mapDetails && !result.some((x) => x._id === mapDetails.id)) {
+          result.push({ type: 'map', _id: mapDetails.id, name: mapDetails.name, previewImg: mapDetails.previewimg });
+        }
       }
     }
-
-    if (type === 'user') {
-      // Add user to result if unique
-      if (!result.some((x) => x._id?.toString() === search.userId?.toString())) {
-        const userDetails = await getUserDetailsHelper(search.userId as ObjectId)
-        result.push({ type, ...userDetails })
-      }
-    }
-
-    if (type === 'map') {
-      // Add map to result if unique
-      if (!result.some((x) => x._id?.toString() === search.mapId?.toString())) {
-        const mapDetails = await getMapDetailsHelper(search.mapId as ObjectId)
-        result.push({ type, ...mapDetails })
-      }
-    }
+    res.status(200).send(result);
+  } catch (err) {
+    return throwError(res, 500, 'Database error retrieving recent searches');
   }
-
-  res.status(200).send(result)
 }
 
 export default getRecentSearches

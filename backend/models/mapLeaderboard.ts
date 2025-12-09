@@ -1,19 +1,17 @@
-import { ObjectId } from 'mongodb'
-
 export type TopScore = {
-  gameId: ObjectId
-  userId: ObjectId
+  gameId: string | number
+  userId: string | number
   totalPoints: number
   totalTime: number
 }
 
 type MapLeaderboard = {
-  _id: ObjectId
-  mapId: ObjectId | string
+  _id: string | number
+  mapId: string | number
   scores: TopScore[]
   avgScore?: number
   usersPlayed?: number
-  dailyChallengeId?: ObjectId
+  dailyChallengeId?: string | number
 }
 
 export default MapLeaderboard

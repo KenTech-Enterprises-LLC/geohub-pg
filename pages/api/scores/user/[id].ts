@@ -1,11 +1,11 @@
 /* eslint-disable import/no-anonymous-default-export */
 import { NextApiRequest, NextApiResponse } from 'next'
 import getUserScores from '@backend/routes/scores/getUserScores'
-import { dbConnect } from '@backend/utils'
+// Removed dbConnect, not needed for PostgreSQL
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     switch (req.method) {
       case 'GET':

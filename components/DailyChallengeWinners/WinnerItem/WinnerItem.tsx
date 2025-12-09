@@ -5,7 +5,7 @@ import { MapLeaderboardType } from '@types'
 import { formatMonthDay } from '@utils/dateHelpers'
 import { formatLargeNumber } from '@utils/helpers'
 import { StyledWinnerItem } from './'
-import { ChartBarIcon } from '@heroicons/react/outline'
+import { ChartBarIcon } from '@heroicons/react/24/outline'
 
 type Props = {
   winner: MapLeaderboardType

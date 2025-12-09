@@ -1,26 +1,20 @@
 /* eslint-disable import/no-anonymous-default-export */
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 import { userProject } from '@backend/utils/dbProjects'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // dbConnect not needed for pg
 
     if (req.method === 'GET') {
       const userId = req.query.id as string
 
-      const user = await collections.users
-        ?.find({ _id: new ObjectId(userId) })
-        .project(userProject)
-        .toArray()
-
-      if (!user || user.length !== 1) {
-        return res.status(400).send(`Failed to find user with id: ${userId}`)
+      const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+      if (!userRes.rows.length) {
+        return res.status(400).send(`Failed to find user with id: ${userId}`);
       }
-
-      res.status(200).send(user[0])
+      res.status(200).send(userRes.rows[0]);
     } else {
       res.status(405).end(`Method ${req.method} Not Allowed`)
     }

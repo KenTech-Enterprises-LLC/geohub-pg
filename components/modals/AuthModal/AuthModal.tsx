@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { FC } from 'react'
 import { Button, Modal } from '@components/system'
-import { XIcon } from '@heroicons/react/outline'
+import { XMarkIcon } from '@heroicons/react/24/outline'
 import { StyledAuthModal } from './'
 
 type Props = {
@@ -16,7 +16,7 @@ const AuthModal: FC<Props> = ({ isOpen, closeModal }) => {
         <div className="header">
           <h1 className="modal-title">Login To GeoHub</h1>
           <button className="close-button" onClick={closeModal}>
-            <XIcon />
+            <XMarkIcon />
           </button>
         </div>
 

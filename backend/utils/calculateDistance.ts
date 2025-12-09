@@ -27,7 +27,7 @@ const calculateDistance = (
     Math.asin(
       Math.sqrt(
         Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-          Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
+        Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
       )
     )
 

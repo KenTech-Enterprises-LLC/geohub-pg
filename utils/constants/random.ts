@@ -1,8 +1,9 @@
-export const OFFICIAL_WORLD_ID = '6185df7a7b54baf63473a53e'
-export const COUNTRY_STREAKS_ID = 'country-streaks'
-export const DAILY_CHALLENGE_ID = 'daily-challenge'
+// Use integer IDs for PostgreSQL compatibility
+export const OFFICIAL_WORLD_ID = 1
+export const COUNTRY_STREAKS_ID = 2 // If you need a special string, handle it separately in code
+export const DAILY_CHALLENGE_ID = 3
 
-export const GUEST_ACCOUNT_ID = '636ed6784ec6f85e6f18591e'
+export const GUEST_ACCOUNT_ID = 0
 
 export const COUNTRY_STREAK_DETAILS = {
   _id: COUNTRY_STREAKS_ID,

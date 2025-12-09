@@ -1,14 +1,15 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
 import getMapFromGame from '@backend/queries/getMapFromGame'
-import { collections, getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
+import { getUserId, throwError } from '@backend/utils'
 import { ChallengeType } from '@types'
 
 const getChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
   const challengeId = req.query.id as string
 
-  const challenge = await collections.challenges?.findOne({ _id: new ObjectId(challengeId) })
+  const challengeRes = await pool.query('SELECT * FROM challenges WHERE id = $1', [challengeId])
+  const challenge = challengeRes.rows[0]
 
   if (!challenge) {
     return throwError(res, 404, 'Failed to find challenge')
@@ -16,9 +17,9 @@ const getChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
 
   // Get user details of challenge creator (if not the daily challenge)
   let challengeCreator = null
-  if (!challenge.isDailyChallenge) {
-    challengeCreator = await collections.users?.findOne({ _id: challenge.creatorId })
-
+  if (!challenge.is_daily_challenge) {
+    const creatorRes = await pool.query('SELECT * FROM users WHERE id = $1', [challenge.creator_id])
+    challengeCreator = creatorRes.rows[0]
     if (!challengeCreator) {
       return throwError(res, 404, 'Failed to find challenge')
     }
@@ -27,10 +28,8 @@ const getChallenge = async (req: NextApiRequest, res: NextApiResponse) => {
   let playersGame = null
 
   if (userId) {
-    playersGame = await collections.games?.findOne({
-      userId: new ObjectId(userId),
-      challengeId: new ObjectId(challengeId),
-    })
+    const gameRes = await pool.query('SELECT * FROM games WHERE user_id = $1 AND challenge_id = $2', [userId, challengeId])
+    playersGame = gameRes.rows[0]
   }
 
   const mapDetails = await getMapFromGame(challenge as ChallengeType)

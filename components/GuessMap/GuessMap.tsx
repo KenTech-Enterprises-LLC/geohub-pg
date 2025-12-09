@@ -3,14 +3,14 @@ import { FC, useEffect, useRef, useState } from 'react'
 import Game from '@backend/models/game'
 import { Marker } from '@components/Marker'
 import { Button } from '@components/system'
-import { ArrowRightIcon, XIcon } from '@heroicons/react/outline'
+import { ArrowRightIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAppSelector } from '@redux/hook'
 import { GoogleMapsConfigType, LocationType } from '@types'
 import { GUESS_MAP_OPTIONS } from '@utils/constants/googleMapOptions'
 import useGuessMap from '@utils/hooks/useGuessMap'
 import getMapsKey from '../../utils/helpers/getMapsKey'
 import { StyledGuessMap } from './'
-import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/solid'
+import { LockOpenIcon, LockClosedIcon } from '@heroicons/react/24/solid'
 
 type Props = {
   currGuess: LocationType | null
@@ -152,7 +152,7 @@ const GuessMap: FC<Props> = ({
         </div>
 
         <button className="close-map-button" onClick={closeMobileMap}>
-          <XIcon />
+          <XMarkIcon />
         </button>
 
         <div className="submit-button-wrapper">

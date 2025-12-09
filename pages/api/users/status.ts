@@ -1,11 +1,10 @@
 /* eslint-disable import/no-anonymous-default-export */
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, dbConnect, getUserId, isUserBanned } from '@backend/utils'
+import { getUserId, isUserBanned } from '@backend/utils'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    await dbConnect()
+    // dbConnect not needed for pg
 
     if (req.method !== 'GET') {
       return res.status(405).end(`Method ${req.method} Not Allowed`)

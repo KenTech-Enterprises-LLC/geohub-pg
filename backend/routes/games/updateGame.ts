@@ -1,11 +1,10 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { Game } from '@backend/models'
 import getMapFromGame from '@backend/queries/getMapFromGame'
+import { pool } from '@backend/utils/dbConnect'
 import {
   calculateDistance,
   calculateRoundScore,
-  collections,
   getLocations,
   getUserId,
   isUserBanned,
@@ -28,17 +27,16 @@ const updateGame = async (req: NextApiRequest, res: NextApiResponse) => {
     return throwError(res, 401, 'You are currently banned from playing games')
   }
 
-  const getGameQuery = { _id: new ObjectId(gameId) }
+  // Fetch game from PostgreSQL
+  const gameRes = await pool.query('SELECT * FROM games WHERE id = $1', [gameId])
+  let game = gameRes.rows[0] as Game
   const { guess, guessTime, localRound, timedOut, timedOutWithGuess, adjustedLocation, streakLocationCode } = req.body
-
-  const game = (await collections.games?.findOne(getGameQuery)) as Game
 
   if (!game) {
     return throwError(res, 500, 'Failed to save your recent guess')
   }
-
   // Verify this is the game creator
-  if (userId !== game.userId.toString()) {
+  if (userId !== game.userId?.toString()) {
     return throwError(res, 401, 'You are not authorized to modify this game')
   }
 
@@ -67,41 +65,29 @@ const updateGame = async (req: NextApiRequest, res: NextApiResponse) => {
   game.state = isGameFinished ? 'finished' : 'started'
 
   // Check if streak games need more locations
+  const isStreakGame = game.mode === 'streak';
+  const NEW_LOCATIONS_COUNT = 10;
   if (!isGameFinished) {
-    const isStreakGame = game.mode === 'streak'
-    const NEW_LOCATIONS_COUNT = 10
-
     // Standard 5 round games get created with 5 locations -> Streak games may require more locations
     if (isStreakGame && game.challengeId) {
-      const query = { _id: new ObjectId(game.challengeId) }
-      const challenge = (await collections.challenges?.findOne(query)) as ChallengeType
+      // Fetch challenge from PostgreSQL
+      const challengeResult = await pool.query('SELECT * FROM challenges WHERE id = $1', [game.challengeId])
+      const challenge = challengeResult.rows[0] as ChallengeType
 
       if (localRound >= challenge.locations.length) {
         const newLocations = await getLocations(game.mapId, NEW_LOCATIONS_COUNT)
-
         if (!newLocations) {
           return throwError(res, 400, 'Failed to get new location')
         }
-
         challenge.locations = challenge.locations.concat(newLocations)
-
-        const updatedChallenge = await collections.challenges?.findOneAndUpdate(query, { $set: challenge })
-
-        if (!updatedChallenge) {
-          return throwError(res, 500, 'Failed to get next round')
-        }
-
-        game.rounds = game.rounds.concat(newLocations)
+        // Update challenge locations in PostgreSQL
+        await pool.query('UPDATE challenges SET locations = $1 WHERE id = $2', [JSON.stringify(challenge.locations), game.challengeId])
+        game.rounds = challenge.locations
       }
-
-      // Every round, sync the user's game rounds with the challenge locations
-      game.rounds = challenge.locations
     }
-
     if (isStreakGame && !game.challengeId) {
       if (localRound >= game.rounds.length) {
         const newLocations = await getLocations(game.mapId, NEW_LOCATIONS_COUNT)
-
         if (!newLocations) {
           return throwError(res, 400, 'Failed to get new location')
         }
@@ -109,7 +95,6 @@ const updateGame = async (req: NextApiRequest, res: NextApiResponse) => {
         game.rounds = game.rounds.concat(newLocations)
       }
     }
-
     // Updates the previously generated round to the coordinates returned by the Google SV Pano
     if (adjustedLocation) {
       game.rounds[localRound - 1] = adjustedLocation
@@ -149,8 +134,33 @@ const updateGame = async (req: NextApiRequest, res: NextApiResponse) => {
   game.totalDistance.imperial += distance.imperial
   game.totalTime += Math.floor(guessTime)
 
-  const updatedGame = await collections.games?.findOneAndUpdate(getGameQuery, { $set: game })
-
+  // Update game in PostgreSQL
+  const updateSQL = `
+    UPDATE games SET
+      guesses = $1,
+      rounds = $2,
+      round = $3,
+      total_points = $4,
+      total_distance = $5,
+      total_time = $6,
+      streak = $7,
+      state = $8
+    WHERE id = $9
+    RETURNING *
+  `
+  const updateValues = [
+    JSON.stringify(game.guesses),
+    JSON.stringify(game.rounds),
+    game.round,
+    game.totalPoints,
+    JSON.stringify(game.totalDistance),
+    game.totalTime,
+    game.streak,
+    game.state,
+    gameId,
+  ]
+  const updatedRes = await pool.query(updateSQL, updateValues)
+  const updatedGame = updatedRes.rows[0]
   if (!updatedGame) {
     return throwError(res, 500, 'Failed to save your recent guess')
   }

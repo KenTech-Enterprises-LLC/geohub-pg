@@ -1,5 +1,5 @@
 import { FC } from 'react'
-import { GlobeIcon, LocationMarkerIcon, ScaleIcon, UserIcon } from '@heroicons/react/outline'
+import { GlobeAltIcon, MapPinIcon, ScaleIcon, UserIcon } from '@heroicons/react/24/outline'
 import { StreakStatsType } from '@types'
 import { formatLargeNumber } from '@utils/helpers'
 import { StyledStreakMapStats } from './'
@@ -35,7 +35,7 @@ const StreakMapStats: FC<Props> = ({ streakStats }) => {
 
       <div className="stat-item">
         <div className="stat-icon">
-          <LocationMarkerIcon />
+          <MapPinIcon />
         </div>
 
         <div className="textWrapper">
@@ -46,7 +46,7 @@ const StreakMapStats: FC<Props> = ({ streakStats }) => {
 
       <div className="stat-item">
         <div className="stat-icon">
-          <GlobeIcon />
+          <GlobeAltIcon />
         </div>
 
         <div className="textWrapper">

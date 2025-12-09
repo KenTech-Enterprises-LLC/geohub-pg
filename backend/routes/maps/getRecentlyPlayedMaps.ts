@@ -1,49 +1,28 @@
-import { ObjectId } from 'mongodb'
 import { NextApiRequest, NextApiResponse } from 'next'
-import { collections, getUserId, throwError } from '@backend/utils'
+import { getUserId, throwError } from '@backend/utils'
+import { pool } from '@backend/utils/dbConnect'
 
 const getRecentlyPlayedMaps = async (req: NextApiRequest, res: NextApiResponse) => {
   const userId = await getUserId(req, res)
-
-  const games = await collections.games
-    ?.aggregate([
-      { $match: { userId: new ObjectId(userId) } },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: '$mapId',
-          createdAt: { $first: '$createdAt' },
-        },
-      },
-      {
-        $lookup: {
-          from: 'maps',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'mapDetails',
-        },
-      },
-      {
-        $unwind: '$mapDetails',
-      },
-      {
-        $project: {
-          _id: '$mapDetails._id',
-          previewImg: '$mapDetails.previewImg',
-          name: '$mapDetails.name',
-          createdAt: 1,
-        },
-      },
-      { $sort: { createdAt: -1 } },
-    ])
-    .limit(5)
-    .toArray()
-
-  if (!games) {
-    return throwError(res, 400, 'Could not find any recent games for this user')
+  try {
+    const query = `
+      SELECT m.id, m.previewimg, m.name, g.createdat
+      FROM games g
+      JOIN maps m ON g.mapid = m.id
+      WHERE g.userid = $1
+      GROUP BY m.id, m.previewimg, m.name, g.createdat
+      ORDER BY g.createdat DESC
+      LIMIT 5;
+    `;
+    const result = await pool.query(query, [userId]);
+    const games = result.rows;
+    if (!games) {
+      return throwError(res, 400, 'Could not find any recent games for this user');
+    }
+    res.status(200).send(games);
+  } catch (err) {
+    return throwError(res, 500, 'Database error retrieving recent games');
   }
-
-  res.status(200).send(games)
 }
 
 export default getRecentlyPlayedMaps

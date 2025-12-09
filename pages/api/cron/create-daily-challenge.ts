@@ -1,7 +1,7 @@
 /* eslint-disable import/no-anonymous-default-export */
 import { NextApiRequest, NextApiResponse } from 'next'
 import createDailyChallenge from '@backend/routes/challenges/createDailyChallenge'
-import { dbConnect, throwError } from '@backend/utils'
+import { throwError } from '@backend/utils'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -11,7 +11,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       return throwError(res, 401, 'Unauthorized')
     }
 
-    await dbConnect()
+    // PostgreSQL pool does not require explicit connection
 
     return createDailyChallenge(req, res)
   } catch (err) {

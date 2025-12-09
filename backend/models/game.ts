@@ -1,13 +1,12 @@
-import { ObjectId } from 'mongodb'
 import { DistanceType, GameSettingsType, GuessType, LocationType, MapType } from '@types'
 import User from './user'
 
 type Game = {
-  id?: ObjectId
-  _id?: ObjectId // replace id with _id throughout app
+  id?: string | number
+  _id?: string | number // replace id with _id throughout app
   mapId: string
   mapName?: string
-  userId: ObjectId
+  userId: string | number
   userName?: string
   userAvatar?: { emoji: string; color: string }
   gameSettings: GameSettingsType
@@ -19,7 +18,7 @@ type Game = {
   totalTime: number
   difficulty?: 'Normal' | 'Easy' | 'Challenging'
   countryCode?: string
-  challengeId?: ObjectId | string | null
+  challengeId?: string | number | null
   userDetails?: User
   createdAt?: Date
   mapDetails?: MapType
